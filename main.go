@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -11,29 +12,27 @@ import (
 func main() {
 	flag.Parse()
 	if flag.NArg() == 0 {
-		_, json := processStdin()
-		err, _ := isValidJson(json)
-		fmt.Println(err)
+		_, dataString := processStdin()
+		jsonErr, _ := jsonParser(dataString)
+		fmt.Printf("%s", jsonErr)
 	} else {
 		// Process each file provided as an argument
 		for _, filename := range flag.Args() {
-			_, json := processFile(filename)
-			err, _ := isValidJson(json)
-			fmt.Printf("%s\t%s\n", filename, err)
+			_, dataString := processFile(filename)
+			jsonErr, _ := jsonParser(dataString)
+			fmt.Printf("%s\t%s", filename, jsonErr)
+			continue
 		}
 	}
 }
 
-func isValidJson(data string) (err error, isJSON bool) {
-	if len(data) == 0 {
-		// empty data
-		return errors.New("code 1"), true
-	} else if data[len(data)-1] == '}' && data[0] == '{' {
-		// valid JSON
-		return errors.New("code 0"), false
+func jsonParser(dataString string) (jsonErr error, dataMap map[string]interface{}) {
+	var data map[string]interface{}
+	err := json.Unmarshal([]byte(dataString), &data)
+	if err != nil {
+		return errors.New("code 1 - could not unmarshal json \n"), data
 	} else {
-		// invalid JSON
-		return errors.New("code 1"), false
+		return errors.New("code 0 - json parsed \n"), data
 	}
 }
 
